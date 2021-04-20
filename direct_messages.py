@@ -8,6 +8,7 @@ import bottle_sqlite
 from bottle import get, post, delete, error, abort, request, response, HTTPResponse
 
 import boto3
+from botocore.exceptions import ClientError
 import uuid
 
 import time
@@ -60,10 +61,24 @@ def sentDirectMessage():
     now = time.localtime()
     now = time.strftime(f, now)
     
+    mid = str(uuid.uuid4())
         
-    message = dynamodb.put_item(TableName='direct_messages', Item={'message_id': {'S': str(uuid.uuid4())}, 'time': {'S': now}, 'to_username': {'S': data['to']}, 'from_username': {'S': data['from']}, 'messages': {'L': [{'S': data['message']}]}})
+    dynamodb.put_item(TableName='direct_messages', Item={'message_id': {'S': mid}, 'time': {'S': now}, 'to_username': {'S': data['to']}, 'from_username': {'S': data['from']}, 'messages': {'L': [{'S': data['message']}]}})
     
-    return message
+    try:
+    	dynamodb.put_item(TableName='users', Item={'username': {'S': data['to']}, 'direct_messages': {'L': [{'S': mid}]}}, ConditionExpression = "attribute_not_exists(username)")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            dynamodb.update_item(TableName='users', Key={'username': {'S': data['to']}}, UpdateExpression="SET direct_messages = list_append(direct_messages, :attrValue)", ExpressionAttributeValues={':attrValue': {'L': [{'S': mid}]}})
+            
+    try:
+    	dynamodb.put_item(TableName='users', Item={'username': {'S': data['from']}, 'direct_messages': {'L': [{'S': mid}]}}, ConditionExpression = "attribute_not_exists(username)")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            dynamodb.update_item(TableName='users', Key={'username': {'S': data['from']}}, UpdateExpression="SET direct_messages = list_append(direct_messages, :attrValue)", ExpressionAttributeValues={':attrValue': {'L': [{'S': mid}]}})
+           
+    
+    return {'message': 'success'}
     
 @post('/directMessages/<message_id>')
 def replyToDirectMessage(message_id):
@@ -77,10 +92,17 @@ def replyToDirectMessage(message_id):
         
     message = dynamodb.update_item(TableName='direct_messages', Key={'message_id': {'S': message_id}}, UpdateExpression="SET messages = list_append(messages, :attrValue)", ExpressionAttributeValues={':attrValue': {'L': [{'S': data['message']}]}})
     
-    return message
+    return {'message': 'success'}
 
 @get('/directMessages/replies/<message_id>')
 def listRepliesTo(message_id):
+    messages = dynamodb.get_item(TableName='direct_messages', Key={'message_id': {'S': message_id}})
+    msg = messages['Item']['messages']
+    return msg
+    
+
+@get('/directMessages/replies/<message_id>')
+def listDirectMessage(message_id):
     messages = dynamodb.get_item(TableName='direct_messages', Key={'message_id': {'S': message_id}})
     msg = messages['Item']['messages']
     return msg

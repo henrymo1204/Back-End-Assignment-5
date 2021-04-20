@@ -4,29 +4,17 @@ import boto3
 dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
 
 # Create the DynamoDB table.
-table = dynamodb.create_table(
+table1 = dynamodb.create_table(
     TableName='direct_messages',
     KeySchema=[
         {
             'AttributeName': 'message_id',
             'KeyType': 'HASH'
-        },
-        {
-            'AttributeName': 'to_username',
-            'KeyType': 'RANGE',
-            'AttributeName': 'from_username',
-            'KeyType': 'RANGE'
         }
     ],
     AttributeDefinitions=[
         {
             'AttributeName': 'message_id',
-            'AttributeType': 'S'
-        },
-        {
-            'AttributeName': 'to_username',
-            'AttributeType': 'S',
-            'AttributeName': 'from_username',
             'AttributeType': 'S'
         }
     ],
@@ -37,5 +25,29 @@ table = dynamodb.create_table(
 )
 
 # Wait until the table exists.
-table.meta.client.get_waiter('table_exists').wait(TableName='direct_messages')
+table1.meta.client.get_waiter('table_exists').wait(TableName='direct_messages')
 
+
+# Create the DynamoDB table.
+table2 = dynamodb.create_table(
+    TableName='users',
+    KeySchema=[
+        {
+            'AttributeName': 'username',
+            'KeyType': 'HASH'
+        }
+    ],
+    AttributeDefinitions=[
+        {
+            'AttributeName': 'username',
+            'AttributeType': 'S'
+        }
+    ],
+    ProvisionedThroughput={
+        'ReadCapacityUnits': 5,
+        'WriteCapacityUnits': 5
+    }
+)
+
+# Wait until the table exists.
+table2.meta.client.get_waiter('table_exists').wait(TableName='direct_messages')
