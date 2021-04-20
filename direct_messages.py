@@ -101,8 +101,8 @@ def listRepliesTo(message_id):
     return msg
     
 
-@get('/directMessages/replies/<message_id>')
-def listDirectMessage(message_id):
-    messages = dynamodb.get_item(TableName='direct_messages', Key={'message_id': {'S': message_id}})
-    msg = messages['Item']['messages']
+@get('/directMessages/user/<username>')
+def listDirectMessageFor(username):
+    messages = dynamodb.get_item(TableName='users', Key={'username': {'S': username}})
+    msg = messages['Item']['direct_messages']
     return msg
