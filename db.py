@@ -11,12 +11,24 @@ table = dynamodb.create_table(
             'AttributeName': 'message_id',
             'KeyType': 'HASH'
         },
+        {
+            'AttributeName': 'to_username',
+            'KeyType': 'RANGE',
+            'AttributeName': 'from_username',
+            'KeyType': 'RANGE'
+        }
     ],
     AttributeDefinitions=[
         {
             'AttributeName': 'message_id',
             'AttributeType': 'S'
         },
+        {
+            'AttributeName': 'to_username',
+            'AttributeType': 'S',
+            'AttributeName': 'from_username',
+            'AttributeType': 'S'
+        }
     ],
     ProvisionedThroughput={
         'ReadCapacityUnits': 5,

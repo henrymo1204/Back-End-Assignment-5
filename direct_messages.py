@@ -61,7 +61,7 @@ def sentDirectMessage():
     now = time.strftime(f, now)
     
         
-    message = dynamodb.put_item(TableName='direct_messages', Item={'message_id': {'S': str(uuid.uuid4())}, 'time': {'S': now}, 'sent_to_user_name': {'S': data['to']}, 'sent_from_user_name': {'S': data['from']}, 'messages': {'L': [{'S': data['message']}]}})
+    message = dynamodb.put_item(TableName='direct_messages', Item={'message_id': {'S': str(uuid.uuid4())}, 'time': {'S': now}, 'to_username': {'S': data['to']}, 'from_username': {'S': data['from']}, 'messages': {'L': [{'S': data['message']}]}})
     
     return message
     
@@ -79,3 +79,8 @@ def replyToDirectMessage(message_id):
     
     return message
 
+@get('/directMessages/replies/<message_id>')
+def listRepliesTo(message_id):
+    messages = dynamodb.get_item(TableName='direct_messages', Key={'message_id': {'S': message_id}})
+    msg = messages['Item']['messages']
+    return msg
